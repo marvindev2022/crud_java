@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,25 +54,67 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
     }
+    @GetMapping("/{taskId}")
+    public ResponseEntity getOne(@PathVariable UUID taskId, HttpServletRequest request) {
+        UUID userId = (UUID) request.getAttribute("userId");
+        if (userId != null) {
+            TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
+                    .findFirst().orElse(null);
+            if (task != null) {
+                return ResponseEntity.status(HttpStatus.OK).body(task);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+    }
+
+    @PutMapping("/{taskId}")
+    public ResponseEntity update(@PathVariable UUID taskId, @RequestBody TaskModel taskModel,
+            HttpServletRequest request) {
+        UUID userId = (UUID) request.getAttribute("userId");
+        LocalDateTime currentDate = LocalDateTime.now();
+        if (currentDate.isAfter(taskModel.getStartAt())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Start date must be after current date");
+        }
+        if (taskModel.getEndAt() != null && taskModel.getStartAt().isAfter(taskModel.getEndAt())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("End date must be after start date");
+        }
+        if (userId != null) {
+            TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
+                    .findFirst().orElse(null);
+            if (task != null) {
+                task.setTitle(taskModel.getTitle());
+                task.setDescription(taskModel.getDescription());
+                task.setStartAt(taskModel.getStartAt());
+                task.setEndAt(taskModel.getEndAt());
+                task.setUpdatedAt(LocalDateTime.now());
+                TaskModel taskUpdated = this.taskRepository.save(task);
+                return ResponseEntity.status(HttpStatus.OK).body(taskUpdated);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+    }
 
     @DeleteMapping("/{taskId}")
-public ResponseEntity delete(@PathVariable UUID taskId, HttpServletRequest request) {
-    UUID userId = (UUID) request.getAttribute("userId");
-    if (userId != null) {
-        // First, check if the task exists for the given user
-        TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
-                .findFirst().orElse(null);
-        if (task != null) {
-            // Delete the task
-            this.taskRepository.delete(task);
-            return ResponseEntity.status(HttpStatus.OK).body("Task deleted");
+    public ResponseEntity delete(@PathVariable UUID taskId, HttpServletRequest request) {
+        UUID userId = (UUID) request.getAttribute("userId");
+        if (userId != null) {
+            TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
+                    .findFirst().orElse(null);
+            if (task != null) {
+                this.taskRepository.delete(task);
+                return ResponseEntity.status(HttpStatus.OK).body("Task deleted");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+            }
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
-    } else {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
     }
-}
-
 
 }

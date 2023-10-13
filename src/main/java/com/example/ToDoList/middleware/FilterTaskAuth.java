@@ -25,14 +25,14 @@ public class FilterTaskAuth extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (request.getRequestURI().contains("/task")) {
+        if (request.getRequestURI().contains("/task") || request.getRequestURI().contains("/tasks") ) {
             String token = request.getHeader("Authorization");
             if (token == null || token.isEmpty()) {
                 response.sendError(401, "Token not found");
                 return;
             }
             var authEncoded = token.substring("Basic".length()).trim();
-            byte[] decodedBytes = Base64.getDecoder().decode(authEncoded);
+            byte[] decodedBytes = Base64.getDecoder().decode(authEncoded);  
             String decodedString = new String(decodedBytes);
             String[] credentials = decodedString.split(":");
             if (credentials.length != 2) {
