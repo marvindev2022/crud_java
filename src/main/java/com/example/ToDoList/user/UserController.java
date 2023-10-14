@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/users")
@@ -24,7 +25,7 @@ public class UserController {
 
     @PostMapping("/")
 
-    public ResponseEntity create(@RequestBody UserModel userModel) {
+    public ResponseEntity<?> create(@RequestBody UserModel userModel) {
         var userExist = this.userRepository.findByUsername(userModel.getUsername());
         if (userExist != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already exists");
@@ -35,8 +36,9 @@ public class UserController {
         var userCReated = this.userRepository.save(userModel);
         return ResponseEntity.status(HttpStatus.CREATED).body(userCReated);
     }
+
     @PutMapping("/{userId}")
-    public ResponseEntity update(@RequestBody UserModel userModel, @PathVariable UUID userId) {
+    public ResponseEntity<?> update(@RequestBody UserModel userModel, @PathVariable UUID userId) {
         var userExist = this.userRepository.findById(userId);
         if (userExist.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
@@ -44,13 +46,18 @@ public class UserController {
         var user = userExist.get();
         user.setUsername(userModel.getUsername());
         user.setPassword(userModel.getPassword());
-         var passwordHashed = BCrypt.withDefaults().hashToString(12, userModel.getPassword().toCharArray());
+        var passwordHashed = BCrypt.withDefaults().hashToString(12, userModel.getPassword().toCharArray());
         user.setPassword(passwordHashed);
         var userUpdated = this.userRepository.save(user);
         return ResponseEntity.status(HttpStatus.OK).body(userUpdated);
     }
+
     @GetMapping("/{userId}")
-    public ResponseEntity getOne(@PathVariable UUID userId) {
+    public ResponseEntity<?> getOne(@PathVariable UUID userId, HttpServletRequest request) {
+
+        if (userId != request.getAttribute("userId")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
         var userExist = this.userRepository.findById(userId);
         if (userExist.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");

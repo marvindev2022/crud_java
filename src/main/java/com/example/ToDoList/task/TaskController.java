@@ -25,7 +25,7 @@ public class TaskController {
     private ITaskRepository taskRepository;
 
     @PostMapping("/")
-    public ResponseEntity create(@RequestBody TaskModel taskModel, HttpServletRequest request) {
+    public ResponseEntity<?> create(@RequestBody TaskModel taskModel, HttpServletRequest request) {
         UUID userId = (UUID) request.getAttribute("userId");
         LocalDateTime currentDate = LocalDateTime.now();
         if (currentDate.isAfter(taskModel.getStartAt())) {
@@ -45,7 +45,7 @@ public class TaskController {
     }
 
     @GetMapping("/")
-    public ResponseEntity getAll(HttpServletRequest request) {
+    public ResponseEntity<?> getAll(HttpServletRequest request) {
         UUID userId = (UUID) request.getAttribute("userId");
         if (userId != null) {
             List<TaskModel> tasks = this.taskRepository.findAllByUserId(userId);
@@ -54,8 +54,9 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
     }
+
     @GetMapping("/{taskId}")
-    public ResponseEntity getOne(@PathVariable UUID taskId, HttpServletRequest request) {
+    public ResponseEntity<?> getOne(@PathVariable UUID taskId, HttpServletRequest request) {
         UUID userId = (UUID) request.getAttribute("userId");
         if (userId != null) {
             TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
@@ -71,7 +72,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}")
-    public ResponseEntity update(@PathVariable UUID taskId, @RequestBody TaskModel taskModel,
+    public ResponseEntity<?> update(@PathVariable UUID taskId, @RequestBody TaskModel taskModel,
             HttpServletRequest request) {
         UUID userId = (UUID) request.getAttribute("userId");
         LocalDateTime currentDate = LocalDateTime.now();
@@ -101,7 +102,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity delete(@PathVariable UUID taskId, HttpServletRequest request) {
+    public ResponseEntity<?> delete(@PathVariable UUID taskId, HttpServletRequest request) {
         UUID userId = (UUID) request.getAttribute("userId");
         if (userId != null) {
             TaskModel task = this.taskRepository.findByUserId(userId).stream().filter(t -> t.getId().equals(taskId))
@@ -116,5 +117,6 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
     }
+
 
 }
